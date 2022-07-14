@@ -3,16 +3,18 @@
 #include "/usr/include/mysql/mysql.h"
 #include <iostream>
 #include <cstring>
+#include <unistd.h>
 
 class Database
 {
 protected:
+    
+public:
     MYSQL *connection = NULL, conn;
     MYSQL_RES *sql_result;
     MYSQL_ROW sql_row;
     char query[1024];
-
-public:
+    
     Database()
     {
         mysql_init(&conn);
