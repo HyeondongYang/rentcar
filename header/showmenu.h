@@ -19,10 +19,11 @@ class showmenu : public Database
         spotmanage spot;
         usermanage user;
     public:
-        void show_main();
+        void show_main(int sock);
         void show_user_page();
         void show_reservation_page();
         void show_car_page();
         void show_spot_page();
+        void send_msg(int sock);
 };
 #endif

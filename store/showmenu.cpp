@@ -1,11 +1,16 @@
 #include "/home/iot/study/cpp/rentcar/header/showmenu.h"
 
-void showmenu::show_main()
+#define BUF_SIZE 1024
+#define NAME_SIZE 20
+
+char name[NAME_SIZE] = "store";
+
+void showmenu::show_main(int sock)
 {
     while (1)
     {
         system("clear");
-        std::cout << "1. 회원정보 2. 예약현황 3. 렌터카현황 4. 관광지수정 5. 종료" << std::endl;
+        std::cout << "1. 회원정보 2. 예약현황 3. 렌터카현황 4. 관광지수정 5. 상담 6. 종료" << std::endl;
         std::cin >> select;
         switch (select)
         {
@@ -22,6 +27,9 @@ void showmenu::show_main()
             show_spot_page();
             break;
         case 5:
+            send_msg(sock);
+            break;
+        case 6:
             return;
             break;
         default:
@@ -118,5 +126,23 @@ void showmenu::show_spot_page()
             return;
             break;
         }
+    }
+}
+
+void showmenu::send_msg(int sock)
+{
+    system("clear");
+    std::cout<<"상담 (종료: q or Q)"<<std::endl;
+    char msg[BUF_SIZE];
+    char name_msg[NAME_SIZE + BUF_SIZE];
+    while (1)
+    {
+        fgets(msg, BUF_SIZE, stdin);
+        if (!strcmp(msg, "q\n") || !strcmp(msg, "Q\n"))
+        {
+            break;
+        }
+        sprintf(name_msg, "%s: %s", name, msg);
+        write(sock, name_msg, BUF_SIZE);
     }
 }
