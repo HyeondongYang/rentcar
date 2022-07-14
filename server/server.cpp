@@ -14,10 +14,13 @@
 
 void *handle_clnt(void *arg);
 void send_msg(char *msg, int clnt_sock);
+void save_msg(char* msg);
 
 int clnt_cnt = 0;
 int clnt_socks[MAX_CLNT];
-  
+
+Database db;
+
 int main(int argc, char **argv)
 {
     int serv_sock, clnt_sock;
@@ -83,8 +86,13 @@ void *handle_clnt(void *arg)
     char msg[BUF_SIZE];
 
     while (str_len = read(clnt_sock, msg, BUF_SIZE) != 0)
-        send_msg(msg, clnt_sock);
-
+    {
+        if(strstr(msg, "!chat")!=NULL || strstr(msg, "!quit"))
+            send_msg(msg, clnt_sock);
+        else
+            save_msg(msg);
+            send_msg(msg, clnt_sock);
+    }
     for (int i = 0; i < clnt_cnt; i++)
     {
         if (clnt_sock == clnt_socks[i])
@@ -111,4 +119,18 @@ void send_msg(char *msg, int clnt_sock)
             write(clnt_socks[i], msg, BUF_SIZE);
     }
 
+}
+
+void save_msg(char* msg)
+{
+    sprintf(db.query, "INSERT INTO chat(chatlog) VALUES('%s')", msg);
+    if(mysql_query(&db.conn, db.query)!=0)
+    {  
+        fprintf(stderr, "Failed to connect to databases: Error: %s\n",
+        mysql_error(&db.conn));
+    }
+    else
+    {
+        std::cout<<"추가 성공"<<std::endl;
+    }
 }

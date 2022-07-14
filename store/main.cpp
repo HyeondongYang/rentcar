@@ -42,13 +42,13 @@ void recv_msg(int sock)
             std::cout<<"error"<<std::endl;
         }
         name_msg[str_len] = 0;
-        if(strstr(name_msg, "chat")!=NULL)
+        if(strstr(name_msg, "!chat")!=NULL)
         {
             std::cout<<"상담요청!! 상담 페이지로 이동하세요"<<std::endl;
             // std::thread second (send_msg, sock);
             // second.join();
         }
-        else if(strstr(name_msg, "quit")!=NULL)
+        else if(strstr(name_msg, "!quit")!=NULL)
         {
             std::cout<<"고객이 상담을 종료했습니다"<<std::endl;
         }
