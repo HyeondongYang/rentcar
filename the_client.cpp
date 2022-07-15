@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/un.h>
-#include <pthread.h>
+#include <thread>
 #include <sys/types.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
@@ -27,8 +27,6 @@ public:
     char Query[1024];
     string Id;
     string Pw;
-    char Id_copy[20];
-    char Pw_copy[20];
     int mysql_num;
     //로그인, 회원가입, id찾기, 비밀번호 찾기
     void SignUp();       // 회원 가입
@@ -68,12 +66,21 @@ void User::remove_infor()
         {
             if (Row[0] == Pw) //해당 아이디에 비밀번호와 같다면
             {
-                sprintf(Query, "delete from user where id='%s'", Id_copy);
-                cout << "\t[ 회원 탈퇴가 정상적으로 처리되었습니다. ]\n\n";
+                sprintf(Query, "delete from user where id='%s'", Id.c_str());
+                if (mysql_query(&Conn, Query) != 0)
+                {
+                    fprintf(stderr, "Failed to connect to databases: Error: %s\n", mysql_error(ConnPtr));
+                }
+                else
+                {
+                    cout << "\t[ 회원 탈퇴가 정상적으로 처리되었습니다. ]\n\n";
+                }
             }
             else
             {
+                cout << "--------------------------------\n";
                 cout << "비밀번호를 잘못 입력했습니다.\n";
+                cout << "--------------------------------\n";
             }
             mysql_free_result(Result);
             cout << "\t확인 하신 후 아무키나 눌러주세요" << endl;
@@ -105,6 +112,7 @@ void User::SignUp()
             cout << "\t사용가능한 아이디 입니다.\n";
             cout << "----------------------------------------\n";
             mysql_free_result(Result);
+            cout << "사용하실 PW를 입력하세요: ";
             cin >> Pw;
             sprintf(Query, "INSERT INTO user(id,pw,name,grade,count) VALUES('%s','%s','%s','Normal','0')", Id.c_str(), Pw.c_str(), Name.c_str());
             if (mysql_query(&Conn, Query) != 0)
@@ -154,9 +162,7 @@ string User::Login()
     cin >> Id;
     cout << "PW: ";
     cin >> Pw;
-    // system("clear");
-    // strcpy(Id_copy, Id);
-    // strcpy(Pw_copy, Pw);
+
 
     sprintf(Query, "select pw from user where id='%s'", Id.c_str());
     if (mysql_query(&Conn, Query) != 0)
@@ -235,7 +241,7 @@ void User::FindId()
 void User::FindPw()
 {
     cout << "<비밀번호 찾기 페이지>" << endl;
-    cout << "등록된 이름 입력: " << endl;
+    cout << "등록된 이름 입력: ";
     cin >> Name;
     sprintf(Query, "select id,pw from user where Name='%s'", Name.c_str()); // 동일한 이름 포함하여 쿼리문 실행
     if (mysql_query(&Conn, Query) != 0)
@@ -338,7 +344,7 @@ void Spot::Search()
                     {
                         cout << "\tname: " << Row[0];
                         cout << "\n\taddress: " << Row[1];
-                        cout << "--------------------------------------\n"
+                        cout << "\n--------------------------------------\n"
                              << endl;
                     }
                     mysql_free_result(Result);
@@ -373,7 +379,7 @@ void Spot::Search()
                     {
                         cout << "\tname: " << Row[0];
                         cout << "\n\taddress: " << Row[1];
-                        cout << "--------------------------------------\n"
+                        cout << "\n--------------------------------------\n"
                              << endl;
                     }
                 }
@@ -383,6 +389,9 @@ void Spot::Search()
         else if (sltNum == 0)
         {
             cout << "그만 조회합니다.\n";
+            cout << "\n확인하신 후 아무키나 누르세요...";
+            cin >> pass;
+            system("clear");
             break;
         }
         else
@@ -403,6 +412,7 @@ private:
     int sltNum; // 고유번호 입력
     int day;
     int mysql_num;
+    string car;
     string str; //  char형 포인터 id   >> string 변환
     string Name;
     string likeName;
@@ -433,7 +443,8 @@ void Reservation::Search()
             }
             else
             {
-                cout << "---------------------------------\n" << endl;
+                cout << "---------------------------------\n"
+                     << endl;
                 Result = mysql_store_result(&Conn);
                 while ((Row = mysql_fetch_row(Result)) != NULL)
                 {
@@ -442,7 +453,8 @@ void Reservation::Search()
                     cout << "\n\tfuel_type: " << Row[2];
                     cout << "\n\tprice: " << Row[3];
                     cout << "\n\tamount: " << Row[4];
-                    cout << "\n---------------------------------\n" << endl;
+                    cout << "\n---------------------------------\n"
+                         << endl;
                 }
                 mysql_free_result(Result);
             }
@@ -552,10 +564,10 @@ void Reservation::Confirmation(string Id, int count) // 확정    (로그인 하
         mysql_num = mysql_num_rows(Result); // 개수 반환       없으면 0    있으면 레코드 갯수 반환      
         if (mysql_num > 1)                  // 해당 아이디에 차량 예약이 있다면
         {
-            cout << "----------------------------------------";
+            cout << "----------------------------------------\n";
             cout << "이미 1대의 차량이 예약되어있습니다. \n";
             cout << "동일 ID로 예약 불가 합니다.\n";
-            cout << "----------------------------------------";
+            cout << "----------------------------------------\n";
             mysql_free_result(Result);
             cout << "\n확인하신 후 아무키나 누르세요...";
             cin >> pass;
@@ -577,12 +589,14 @@ void Reservation::Confirmation(string Id, int count) // 확정    (로그인 하
         {
             if ((Row = mysql_fetch_row(Result)) != NULL) // 쿼리문 수행으로 DB의 한 행만 가져옴
             {
-                cout << "\tname: " << Row[0];
+                cout << "\tname: " << Row[0] << endl;
                 changeInt = atoi(Row[1]); // 정수로 변환
                 if (changeInt < 1)        // 남은 차량이 없으면
                 {
                     mysql_free_result(Result);
+                    cout << "---------------------------------------------------\n";
                     cout << "해당 " << Name << " 차량은 예약 마감되었습니다.\n";
+                    cout << "---------------------------------------------------\n";
                     cout << "\n확인하신 후 아무키나 누르세요...";
                     cin >> pass;
                     system("clear");
@@ -593,7 +607,7 @@ void Reservation::Confirmation(string Id, int count) // 확정    (로그인 하
                     cout << "\n\n   한대만 예약을 할 수 있습니다.\n 숫자 1을 입력: ";
                     cin >> sltNum;
 
-                    if (sltNum == 0 && sltNum > 1)
+                    if (sltNum == 0 || sltNum > 1)
                     {
                         cout << "\n1대의 차량만 랜트할 수 있습니다." << endl;
                         cout << "\n확인하신 후 아무키나 누르세요...";
@@ -624,7 +638,7 @@ void Reservation::Confirmation(string Id, int count) // 확정    (로그인 하
                             cout << "\n확인하신 후 아무키나 누르세요...";
                             cin >> pass;
                             system("clear");
-                            return; // 쿠폰 접립 하기 ///////////////////////////////////////////////////////////////////////////
+                            return; // 쿠폰 접립 하기 //////////////////
                         }
                     }
                 }
@@ -763,9 +777,9 @@ void Reservation::Cancellation(string Id) //  변경
             cin >> sltNum;
             if (sltNum == 1)
             {
-                cout << "차량이름을 입력: ";
-                cin >> Name;
-                sprintf(Query, "select name, amount from car where name = '%s'", Name.c_str());
+                cout << "예약하신 차량이름을 입력: ";
+                cin >> car;
+                sprintf(Query, "select car_name from reservation where id = '%s'", Id.c_str());
                 if (mysql_query(&Conn, Query) != 0)
                 {
                     fprintf(stderr, "Failed to connect to databases: Error: %s\n", mysql_error(&Conn));
@@ -773,45 +787,92 @@ void Reservation::Cancellation(string Id) //  변경
                 else
                 {
                     Result = mysql_store_result(&Conn);
-                    mysql_num = mysql_num_rows(Result); // 개수 반환       없으면 0    있으면 레코드 갯수 반환      
-                    if (mysql_num == 0)                 // 차량이름 잘못 입력 시
+                    if ((Row = mysql_fetch_row(Result)) != NULL)//////////////
                     {
-                        cout << "----------------------------------------\n";
-                        cout << "\t" << Name << " 차량은 존재하지 없습니다. \n";
-                        cout << "    공백을 포함하여 다시 입력하십시오.\n";
-                        cout << "----------------------------------------\n";
+                        str = Row[0];
                         mysql_free_result(Result);
-                        return;
-                    }
-                    if ((Row = mysql_fetch_row(Result)) != NULL)
-                    {
-                        changeInt = atoi(Row[1]);
-                        if (changeInt < 1) // 예약 불가
+                        if (str == car)
                         {
-                            mysql_free_result(Result);
-                            cout << "해당 " << Name << " 차량은 예약 마감되었습니다.\n";
-                        }
-                        else // 예약가능
-                        {
-                            changeInt--;
-                            mysql_free_result(Result);
-                            sprintf(Query, "update car set amount='%d' where name = '%s'", changeInt, Name.c_str()); // car 테이블 업데이트
+                            cout << "변경하실 차량이름을 입력: ";
+                            cin >> car;
+                            sprintf(Query, "select name, amount from car where name = '%s'", car.c_str());
                             if (mysql_query(&Conn, Query) != 0)
                             {
                                 fprintf(stderr, "Failed to connect to databases: Error: %s\n", mysql_error(&Conn));
                             }
                             else
                             {
-                                sprintf(Query, "update reservation set car_name='%s' where id = '%s'", Name.c_str(), str.c_str()); // reservation 테이블 업데이트
-                                if (mysql_query(&Conn, Query) != 0)
+                                Result = mysql_store_result(&Conn);
+                                mysql_num = mysql_num_rows(Result); // 개수 반환       없으면 0    있으면 레코드 갯수 반환      
+                                if (mysql_num == 0)                 // 차량이름 잘못 입력 시
                                 {
-                                    fprintf(stderr, "Failed to connect to databases: Error: %s\n", mysql_error(&Conn));
+                                    cout << "----------------------------------------\n";
+                                    cout << "\t" << car << " 차량은 존재하지 없습니다. \n";
+                                    cout << "    공백을 포함하여 다시 입력하십시오.\n";
+                                    cout << "----------------------------------------\n";
+                                    cout << "\n확인하신 후 아무키나 누르세요...";
+                                    cin >> pass;
+                                    system("clear");
+                                    mysql_free_result(Result);
+                                    return;
                                 }
-                                else
+                                if ((Row = mysql_fetch_row(Result)) != NULL)
                                 {
-                                    cout << Name << "차량으로 변경이 되었습니다.\n";
+                                    changeInt = atoi(Row[1]);
+                                    if (changeInt < 1) // 예약 불가
+                                    {
+                                        mysql_free_result(Result);
+                                        cout << "해당 " << car << " 차량은 예약 마감되었습니다.\n";
+                                    }
+                                    else // 예약가능
+                                    {
+                                        changeInt--;
+                                        mysql_free_result(Result);
+                                        sprintf(Query, "update car set amount='%d' where name = '%s'", changeInt, car.c_str()); // 현재에 빌린차량으로 감소
+                                        if (mysql_query(&Conn, Query) != 0)
+                                        {
+                                            fprintf(stderr, "Failed to connect to databases: Error: %s\n", mysql_error(&Conn));
+                                        }
+                                        else
+                                        {
+                                            sprintf(Query, "update reservation set car_name='%s' where id = '%s'", Name.c_str(), Id.c_str()); // reservation 테이블 변경
+                                            if (mysql_query(&Conn, Query) != 0)
+                                            {
+                                                fprintf(stderr, "Failed to connect to databases: Error: %s\n", mysql_error(&Conn));
+                                            }
+                                            else
+                                            {
+                                                cout << Query;
+                                                cout << Name << "차량으로 변경이 되었습니다.\n";
+                                            }
+                                        }
+                                        sprintf(Query, "select amount from car where name = '%s'", str.c_str());
+                                        if (mysql_query(&Conn, Query) != 0)
+                                        {
+                                            fprintf(stderr, "Failed to connect to databases: Error: %s\n", mysql_error(&Conn));
+                                        }
+                                        else
+                                        {
+                                            Result = mysql_store_result(&Conn);
+                                            if ((Row = mysql_fetch_row(Result)) != NULL)
+                                            {
+                                                changeInt = atoi(Row[0]);
+                                                changeInt++;
+                                                mysql_free_result(Result);
+                                                sprintf(Query, "update car set amount='%d' where name = '%s'", changeInt, str.c_str()); // 과거에 빌에 차량 증가
+                                                if (mysql_query(&Conn, Query) != 0)
+                                                {
+                                                    fprintf(stderr, "Failed to connect to databases: Error: %s\n", mysql_error(&Conn));
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
+                        }
+                        else
+                        {
+                            cout << "예약하신 차량과 불일치 합니다.\n";
                         }
                     }
                 }
@@ -858,7 +919,57 @@ void Reservation::Cancellation(string Id) //  변경
     }
 }
 
-int main(int argc, char **argv)
+char name[20] = "[DEFAULT]";
+
+void send_msg(int sock) // send main
+{
+    char name_msg[1024]; //크기를 이름과 버퍼사이즈로 넣어준다
+    char msg[1024];
+
+    while (1)
+    {
+        fgets(msg, 1024, stdin);
+        if (!strcmp(msg, "q\n") || !strcmp(msg, "Q\n"))
+        {
+            memset(msg, 0, 1024);
+            strcpy(msg, "!quit");
+            write(sock, msg, 1024);
+            break;
+        }
+        sprintf(name_msg, "%s: %s", name, msg);
+        write(sock, name_msg, 1024);
+    }
+}
+
+void recv_msg(int sock) // read thread main
+{
+
+    char name_msg[1024];
+    int str_len;
+
+    while (1)
+    {
+        memset(name_msg, 0, 1024);
+        str_len = read(sock, name_msg, 1024);
+        if (str_len < 0)
+        {
+            cout << "error" << endl;
+        } // printf("길이 : %d\n", str_len);
+        name_msg[str_len] = 0;
+        if (strstr(name_msg, "Clear") != NULL)
+        {
+            system("clear");
+            continue;
+        }
+        else if (str_len == -1) // read 실패시
+        {
+            printf("메세지를 읽어오지 못했습니다.\n");
+        }
+        fputs(name_msg, stdout);
+    }
+}
+
+int main()
 {
     // db, user, spot;
     // user,reservation;
@@ -870,24 +981,23 @@ int main(int argc, char **argv)
     string pass;
     int count = 0;
 
-    /*int sock;
+    int sock;
     struct sockaddr_in serv_addr;
     pthread_t snd_thread, rcv_thread;
-    char name[20];
-    if (argc != 4)
-    {
-        printf("usage : %s <IP> <PORT> <NAME>\n", argv[0]);
-        return -1;
-    }
+    char msg[1024];
 
-    sprintf(name, "%s", argv[3]);
     sock = socket(AF_INET, SOCK_STREAM, 0);
 
     memset(&serv_addr, 0, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
-    serv_addr.sin_addr.s_addr = inet_addr(argv[1]);
-    serv_addr.sin_port = htons(atoi(argv[2]));*/
-
+    serv_addr.sin_addr.s_addr = inet_addr("10.10.20.33");
+    serv_addr.sin_port = htons(atoi("9050"));
+    if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+    {
+        perror("connect");
+        return -1;
+    }
+    thread first(recv_msg, sock);
 
     while (1)
     {
@@ -917,6 +1027,7 @@ int main(int argc, char **argv)
                     else if (slt == 3)
                     {
                         reser.Confirmation(id, count);
+                        count++;
                     }
                     else if (slt == 4)
                     {
@@ -926,10 +1037,17 @@ int main(int argc, char **argv)
                     {
                         reser.Cancellation(id);
                     }
-                    // else if (slt == 6)
-                    // {
-                    //     reser.Cancellation(id);
-                    // }
+                    else if (slt == 6)
+                    {
+                        system("clear");
+                        memset(msg, 0, 1024);
+                        strcpy(msg, "!chat");
+                        write(sock, msg, 1024);
+                        sprintf(name, "%s", id.c_str());
+                        cout << "        <상담요청 페이지>\n";
+                        cout << "q 입력 시 채팅방 종료됩니다.\n";
+                        send_msg(sock);
+                    }
                     else if (slt == 0)
                     {
                         cout << "홈 버튼을 눌렀습니다.\n";
@@ -964,13 +1082,12 @@ int main(int argc, char **argv)
         case 5:
             system("clear");
             cout << "종료합니다.\n";
-            break;
+            return 0;
         default:
             cout << "잘못눌렀습니다.\n";
-            return 0;
+            break;
         }
     }
+    first.join();
     return 0;
 }
-
-
