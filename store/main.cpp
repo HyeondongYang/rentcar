@@ -32,10 +32,11 @@ char msg[BUF_SIZE];
 
 void recv_msg(int sock)
 {
-    char name_msg[NAME_SIZE + BUF_SIZE];
+    char name_msg[BUF_SIZE];
     int str_len;
     while (1)
     {
+        memset(name_msg, 0, BUF_SIZE);
         str_len = read(sock, name_msg, BUF_SIZE);
         if (str_len < 0)
         {
@@ -70,7 +71,7 @@ int main()
     memset(&serv_addr, 0, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
-    serv_addr.sin_port = htons(atoi("9051"));
+    serv_addr.sin_port = htons(atoi("9050"));
 
     if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
     {

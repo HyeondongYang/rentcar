@@ -110,7 +110,7 @@ void carmanage::show_total_car_amount()
     {
         total+=atoi(sql_row[0]);
     }
-    std::cout<<"총 차량 수: "<<total<<std::endl;
+    std::cout<<"잔여 차량 수: "<<total<<std::endl;
     sleep(2);
     mysql_free_result(sql_result);
 }

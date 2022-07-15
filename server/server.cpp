@@ -85,13 +85,11 @@ void *handle_clnt(void *arg)
     int str_len = 0;
     char msg[BUF_SIZE];
 
+    memset(msg, 0, BUF_SIZE);
     while (str_len = read(clnt_sock, msg, BUF_SIZE) != 0)
     {
-        if(strstr(msg, "!chat")!=NULL || strstr(msg, "!quit"))
-            send_msg(msg, clnt_sock);
-        else
-            save_msg(msg);
-            send_msg(msg, clnt_sock);
+        send_msg(msg, clnt_sock);
+        save_msg(msg);
     }
     for (int i = 0; i < clnt_cnt; i++)
     {
@@ -123,6 +121,7 @@ void send_msg(char *msg, int clnt_sock)
 
 void save_msg(char* msg)
 {
+    std::cout<<msg<<std::endl;
     sprintf(db.query, "INSERT INTO chat(chatlog) VALUES('%s')", msg);
     if(mysql_query(&db.conn, db.query)!=0)
     {  

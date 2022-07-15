@@ -30,7 +30,8 @@ void showmenu::show_main(int sock)
             send_msg(sock);
             break;
         case 6:
-            return;
+            close(sock);
+            exit(0);
             break;
         default:
             break;
@@ -135,11 +136,15 @@ void showmenu::send_msg(int sock)
     std::cout<<"상담 (종료: q or Q)"<<std::endl;
     char msg[BUF_SIZE];
     char name_msg[NAME_SIZE + BUF_SIZE];
+    sprintf(name_msg, "%s님이 입장했습니다", name);
+    write(sock, name_msg, BUF_SIZE);
     while (1)
     {
         fgets(msg, BUF_SIZE, stdin);
         if (!strcmp(msg, "q\n") || !strcmp(msg, "Q\n"))
         {
+            sprintf(name_msg, "%s님이 퇴장했습니다", name);
+            write(sock, name_msg, BUF_SIZE);
             break;
         }
         sprintf(name_msg, "%s: %s", name, msg);
